@@ -332,8 +332,8 @@ let curBM='satellite';
 const OV={};
 const STA={flood_prob:true,flood_pred:false,susceptibility_5:false,susceptibility_3:false,dem:false,flow:false,landuse:false};
 
-[{k:'flood_prob',s:'data/flood_prob.png'},{k:'flood_pred',s:'data/flood_pred.png'},
- {k:'susceptibility_5',s:'data/susceptibility_5.png'},{k:'susceptibility_3',s:'data/susceptibility_3.png'},
+[{k:'flood_prob',s:'data/flood_pred.png'},{k:'flood_pred',s:'data/flood_pred.png'},
+ {k:'susceptibility_5',s:'data/susceptibility_5.jpg'},{k:'susceptibility_3',s:'data/susceptibility_3.jpg'},
  {k:'dem',s:'data/dem.png'},{k:'flow',s:'data/flow.png'},{k:'landuse',s:'data/landuse.png'}
 ].forEach(({k,s})=>{
   OV[k]=L.imageOverlay(s,B[k],{opacity:0.8,interactive:false});
