@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nairobi CBD — Flood Risk Decision Support System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+:root{
+  --bg:#0a0e14;--panel:#111720;--card:#161e2a;--hover:#1c2535;
+  --border:#1f2d42;--borderhi:#2a3f5f;--txt:#e8f0fb;--txt2:#7a93b8;--muted:#3d5070;
+  --red:#e63946;--orange:#f4a261;--yellow:#e9c46a;--green:#2a9d5c;--blue:#457cb6;--cyan:#48cae4;
+  --font-d:'Bebas Neue',sans-serif;--font-b:'DM Sans',sans-serif;--font-m:'DM Mono',monospace;
+  --pw:330px;--rw:270px;--hh:54px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-b);background:var(--bg);color:var(--txt);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+header{height:var(--hh);background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;z-index:1000}
+.h-left{display:flex;align-items:center;gap:12px}
+.h-badge{background:var(--red);color:#fff;font-family:var(--font-m);font-size:9px;letter-spacing:1.5px;padding:3px 7px;border-radius:2px;text-transform:uppercase;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+.h-title{font-family:var(--font-d);font-size:20px;letter-spacing:2px}
+.h-sub{font-size:10px;color:var(--txt2)}
+.h-stats{display:flex;gap:20px}
+.hst{text-align:center}
+.hst-v{font-family:var(--font-d);font-size:18px;color:var(--orange)}
+.hst-l{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.h-right{display:flex;gap:8px}
+.hbtn{background:var(--card);border:1px solid var(--border);color:var(--txt2);font-family:var(--font-b);font-size:11px;padding:5px 12px;border-radius:4px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px}
+.hbtn:hover{background:var(--hover);border-color:var(--blue);color:var(--txt)}
+.hbtn.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.main{display:flex;flex:1;overflow:hidden}
+.lp{width:var(--pw);background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.sec{border-bottom:1px solid var(--border);padding:14px}
+.sec-lbl{font-family:var(--font-m);font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.sec-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+.ch{background:var(--card);border:1px solid var(--border);border-radius:5px;padding:9px 11px;cursor:pointer;transition:all .2s;text-align:left;width:100%;margin-bottom:5px;position:relative;overflow:hidden}
+.ch::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--blue);transform:scaleY(0);transition:transform .2s}
+.ch:hover::before,.ch.on::before{transform:scaleY(1)}
+.ch:hover,.ch.on{background:var(--hover);border-color:var(--blue)}
+.ch-n{font-family:var(--font-m);font-size:9px;color:var(--blue);letter-spacing:1px}
+.ch-t{font-size:12px;font-weight:600;color:var(--txt);margin:2px 0}
+.ch-s{font-size:10px;color:var(--txt2)}
+.story{background:var(--card);border:1px solid var(--border);border-radius:5px;padding:12px;margin-top:8px;font-size:11px;line-height:1.7;color:var(--txt2);display:none}
+.story.vis{display:block;animation:fi .3s ease}
+@keyframes fi{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+.story h4{color:var(--orange);font-size:12px;margin-bottom:7px}
+.story p{margin-bottom:6px}
+.hi{color:var(--cyan);font-weight:600}
+.alist{list-style:none;margin-top:6px}
+.alist li{padding:5px 0;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:7px;font-size:10px}
+.alist li:last-child{border-bottom:none}
+.aico{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;margin-top:1px}
+.lg-t{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;font-family:var(--font-m)}
+.lgrp{margin-bottom:8px}
+.li{display:flex;align-items:center;justify-content:space-between;padding:7px 9px;border-radius:4px;background:var(--card);border:1px solid var(--border);margin-bottom:3px;cursor:pointer;transition:all .2s}
+.li:hover{background:var(--hover);border-color:var(--borderhi)}
+.li.on{border-color:var(--blue)}
+.li-l{display:flex;align-items:center;gap:9px}
+.sw{width:26px;height:12px;border-radius:2px;flex-shrink:0}
+.ln{font-size:11px;font-weight:500;color:var(--txt)}
+.ld{font-size:9px;color:var(--muted)}
+.tog{width:30px;height:16px;background:var(--border);border-radius:8px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.tog::after{content:'';position:absolute;width:12px;height:12px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform .2s}
+.li.on .tog{background:var(--blue)}
+.li.on .tog::after{transform:translateX(14px)}
+.opr{display:flex;align-items:center;gap:7px;margin-top:3px;padding:0 3px;margin-bottom:4px}
+.opl{font-size:9px;color:var(--muted);width:45px;font-family:var(--font-m)}
+.ops{flex:1;-webkit-appearance:none;height:2px;background:var(--border);border-radius:1px;outline:none}
+.ops::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:var(--blue);cursor:pointer}
+.leg-r{display:flex;gap:3px;margin-bottom:4px}
+.leg-c{height:10px;border-radius:1px;flex:1}
+.leg-l{display:flex;justify-content:space-between;font-size:8px;color:var(--muted);font-family:var(--font-m)}
+.zc{background:var(--card);border:1px solid var(--border);border-radius:5px;padding:10px;margin-bottom:5px;cursor:pointer;transition:all .2s}
+.zc:hover{border-color:var(--borderhi);background:var(--hover)}
+.zh{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.zn{font-size:11px;font-weight:600;color:var(--txt)}
+.zb{font-size:9px;font-family:var(--font-m);padding:2px 7px;border-radius:8px}
+.bc{background:rgba(189,0,38,.2);color:#bd0026;border:1px solid #bd0026}
+.bh{background:rgba(240,59,32,.2);color:#f03b20;border:1px solid #f03b20}
+.bm{background:rgba(253,141,60,.2);color:#fd8d3c;border:1px solid #fd8d3c}
+.zt{font-size:10px;color:var(--txt2);line-height:1.5}
+.mw{flex:1;position:relative;overflow:hidden}
+#map{width:100%;height:100%;background:#0a0e14}
+.cmp-ov{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:700;display:none}
+.cmp-ov.on{display:block}
+.cmp-div{position:absolute;top:0;bottom:0;width:3px;background:#fff;left:50%;transform:translateX(-50%);pointer-events:all;cursor:ew-resize;z-index:701}
+.cmp-div::before{content:'';position:absolute;left:50%;transform:translateX(-50%);width:34px;height:34px;border-radius:50%;background:#fff;top:50%;margin-top:-17px}
+.cmp-div::after{content:'\2194';position:absolute;left:50%;transform:translateX(-50%);width:26px;height:26px;border-radius:50%;background:var(--blue);top:50%;margin-top:-13px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;line-height:26px;text-align:center}
+.cmp-ll,.cmp-lr{position:absolute;top:14px;background:rgba(0,0,0,.75);color:#fff;font-size:10px;font-family:var(--font-m);letter-spacing:1px;padding:4px 9px;border-radius:10px;pointer-events:none}
+.cmp-ll{left:14px}
+.cmp-lr{right:14px}
+.mc{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:7px;z-index:800}
+.mb{background:rgba(17,23,32,.9);border:1px solid var(--border);color:var(--txt2);font-family:var(--font-b);font-size:10px;padding:7px 14px;border-radius:18px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;backdrop-filter:blur(8px)}
+.mb:hover{border-color:var(--blue);color:var(--txt)}
+.mb.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.rp{width:var(--rw);background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.cc{padding:14px;border-bottom:1px solid var(--border)}
+.ct{font-family:var(--font-m);font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.cp{text-align:center;padding:16px 0;color:var(--muted);font-size:11px}
+.cp i{display:block;font-size:20px;margin-bottom:6px;opacity:.35}
+.rm{margin:10px 0}
+.rm-l{display:flex;justify-content:space-between;font-size:10px;margin-bottom:5px}
+.rm-b{height:7px;background:var(--border);border-radius:3px;overflow:hidden}
+.rm-f{height:100%;border-radius:3px;transition:width .5s ease}
+.ig{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:8px 0}
+.ic{background:var(--card);border:1px solid var(--border);border-radius:3px;padding:7px}
+.icl{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:var(--font-m)}
+.icv{font-size:12px;font-weight:600;color:var(--txt);margin-top:1px}
+.rp-sec{padding:14px;border-bottom:1px solid var(--border)}
+.ri{display:flex;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.ri:last-child{border-bottom:none}
+.ric{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.rn{font-size:11px;font-weight:600;color:var(--txt)}
+.rd{font-size:9px;color:var(--txt2);margin-top:1px;line-height:1.4}
+.sp{padding:14px}
+.sr{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px}
+.sr:last-child{border-bottom:none}
+.sl{color:var(--txt2)}
+.sv{font-family:var(--font-m);color:var(--cyan);font-size:11px}
+.leaflet-div-icon{background:transparent;border:none}
+.hm{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;font-family:var(--font-m);cursor:pointer;border:2px solid rgba(255,255,255,.4);animation:pm 2s infinite}
+@keyframes pm{0%{box-shadow:0 0 0 0 rgba(230,57,70,.6)}70%{box-shadow:0 0 0 9px rgba(230,57,70,0)}100%{box-shadow:0 0 0 0 rgba(230,57,70,0)}}
+.hmc{background:#bd0026}.hmh{background:#f03b20}.hmm{background:#fd8d3c}
+.leaflet-popup-content-wrapper{background:var(--panel)!important;border:1px solid var(--borderhi)!important;border-radius:7px!important;color:var(--txt)!important;box-shadow:0 8px 30px rgba(0,0,0,.5)!important}
+.leaflet-popup-tip{background:var(--panel)!important}
+.leaflet-popup-close-button{color:var(--txt2)!important}
+.pc{padding:3px;min-width:210px}
+.pz{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:3px}
+.pb{display:inline-block;font-size:9px;font-family:var(--font-m);padding:2px 7px;border-radius:8px;margin-bottom:8px}
+.pf{font-size:10px;color:var(--txt2);line-height:1.6;margin-bottom:8px}
+.pa{border-top:1px solid var(--border);padding-top:7px}
+.pat{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:var(--font-m);margin-bottom:5px}
+.pai{display:flex;align-items:center;gap:5px;padding:2px 0;color:var(--cyan);font-size:10px}
+.leaflet-control-zoom{border:1px solid var(--border)!important;border-radius:5px!important;overflow:hidden}
+.leaflet-control-zoom a{background:var(--panel)!important;color:var(--txt)!important;border-bottom:1px solid var(--border)!important}
+.leaflet-control-zoom a:hover{background:var(--hover)!important}
+.leaflet-control-attribution{background:rgba(10,14,20,.8)!important;color:var(--muted)!important;font-size:8px!important}
+.leaflet-control-attribution a{color:var(--blue)!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="h-left">
+    <span class="h-badge">&#x26A0; RISK ACTIVE</span>
+    <div>
+      <div class="h-title">NAIROBI CBD FLOOD RISK SYSTEM</div>
+      <div class="h-sub">Integrated GIS &amp; AI Flood Decision Support &mdash; Central Business District, Kenya</div>
+    </div>
+  </div>
+  <div class="h-stats">
+    <div class="hst"><div class="hst-v">87.6%</div><div class="hst-l">AI Accuracy</div></div>
+    <div class="hst"><div class="hst-v">13.8%</div><div class="hst-l">Area at Risk</div></div>
+    <div class="hst"><div class="hst-v">2,590</div><div class="hst-l">Flood Pixels</div></div>
+    <div class="hst"><div class="hst-v">147K</div><div class="hst-l">Affected 2024</div></div>
+  </div>
+  <div class="h-right">
+    <button class="hbtn" id="btn-cmp" onclick="toggleCompare()"><i class="fas fa-columns"></i> Compare Maps</button>
+    <button class="hbtn" id="btn-hs" onclick="toggleHotspots()"><i class="fas fa-map-marker-alt"></i> Hotspots</button>
+    <button class="hbtn" onclick="resetView()"><i class="fas fa-compress-arrows-alt"></i> Reset</button>
+  </div>
+</header>
+
+<div class="main">
+<div class="lp">
+  <div class="sec">
+    <div class="sec-lbl"><i class="fas fa-book-open" style="color:var(--blue)"></i> Flood Story</div>
+    <button class="ch on" onclick="showCh(1,this)">
+      <div class="ch-n">01 / WHERE</div><div class="ch-t">Where Does Flooding Occur?</div><div class="ch-s">Spatial distribution of risk zones</div>
+    </button>
+    <button class="ch" onclick="showCh(2,this)">
+      <div class="ch-n">02 / WHY</div><div class="ch-t">Why Does It Flood?</div><div class="ch-s">Environmental drivers &amp; causes</div>
+    </button>
+    <button class="ch" onclick="showCh(3,this)">
+      <div class="ch-n">03 / HOW SEVERE</div><div class="ch-t">How Severe Is the Risk?</div><div class="ch-s">Model results &amp; 2024 impact data</div>
+    </button>
+    <button class="ch" onclick="showCh(4,this)">
+      <div class="ch-n">04 / SOLUTIONS</div><div class="ch-t">What Should Be Done?</div><div class="ch-s">Urban planning &amp; interventions</div>
+    </button>
+    <div id="story" class="story vis">
+      <h4>&#x26A7; Where Flooding Occurs in Nairobi CBD</h4>
+      <p>Flood-prone areas concentrate in the <span class="hi">central and eastern CBD</span>, particularly along Nairobi River tributaries and drainage convergence points.</p>
+      <p>The AI model identified <span class="hi">13.8% of the CBD</span> as flood-prone (2,590 pixels at 30m) based on real satellite flood events 2019-2024 including the severe April-May 2024 El Nino floods that affected 147,061 people.</p>
+      <p>Toggle <strong>AI Prediction</strong> and <strong>GIS Susceptibility</strong> layers, or use <strong>Compare Maps</strong> to view them side by side.</p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-lbl"><i class="fas fa-layer-group" style="color:var(--blue)"></i> Map Layers</div>
+    <div class="lgrp">
+      <div class="lg-t">&#x1F916; AI Model Outputs</div>
+      <div class="li on" id="li-fp" onclick="togL('flood_prob',this)">
+        <div class="li-l"><div class="sw" style="background:linear-gradient(90deg,#ffffb2,#fd8d3c,#bd0026)"></div><div><div class="ln">Flood Probability</div><div class="ld">AI continuous risk 0.0 to 1.0</div></div></div><div class="tog"></div>
+      </div>
+      <div class="opr"><span class="opl">Opacity</span><input type="range" class="ops" min="0" max="100" value="80" oninput="setOp('flood_prob',this.value)"></div>
+      <div class="li" id="li-fd" onclick="togL('flood_pred',this)">
+        <div class="li-l"><div class="sw" style="background:linear-gradient(90deg,#228b22,#ffff00,#ff0000)"></div><div><div class="ln">AI Flood Prediction</div><div class="ld">Binary flood / no-flood</div></div></div><div class="tog"></div>
+      </div>
+      <div class="opr"><span class="opl">Opacity</span><input type="range" class="ops" min="0" max="100" value="80" oninput="setOp('flood_pred',this.value)"></div>
+    </div>
+    <div class="lgrp">
+      <div class="lg-t">&#x1F5FA; GIS Susceptibility</div>
+      <div class="li" id="li-s5" onclick="togL('susceptibility_5',this)">
+        <div class="li-l"><div class="sw" style="background:linear-gradient(90deg,#00b400,#ffdc00,#ff7700,#ff0000)"></div><div><div class="ln">GIS Susceptibility (5-Class)</div><div class="ld">Very Low to Very High</div></div></div><div class="tog"></div>
+      </div>
+      <div class="opr"><span class="opl">Opacity</span><input type="range" class="ops" min="0" max="100" value="80" oninput="setOp('susceptibility_5',this.value)"></div>
+      <div class="li" id="li-s3" onclick="togL('susceptibility_3',this)">
+        <div class="li-l"><div class="sw" style="background:linear-gradient(90deg,#00b400,#ffdc00,#ff0000)"></div><div><div class="ln">GIS Susceptibility (3-Class)</div><div class="ld">Low / Moderate / High</div></div></div><div class="tog"></div>
+      </div>
+      <div class="opr"><span class="opl">Opacity</span><input type="range" class="ops" min="0" max="100" value="80" oninput="setOp('susceptibility_3',this.value)"></div>
+    </div>
+    <div class="lgrp">
+      <div class="lg-t">&#x1F4CD; Environmental Factors</div>
+      <div class="li" id="li-lu" onclick="togL('landuse',this)">
+        <div class="li-l"><div class="sw" style="background:linear-gradient(90deg,#006400,#dc5032,#a0a0a0)"></div><div><div class="ln">Land Use / Land Cover</div><div class="ld">ESA WorldCover 2021</div></div></div><div class="tog"></div>
+      </div>
+      <div class="opr"><span class="opl">Opacity</span><input type="range" class="ops" min="0" max="100" value="80" oninput="setOp('landuse',this.value)"></div>
+      <div class="li" id="li-dm" onclick="togL('dem',this)">
+        <div class="li-l"><div class="sw" style="background:linear-gradient(90deg,#003296,#64c864,#a07832)"></div><div><div class="ln">Elevation (DEM)</div><div class="ld">SRTM 30m - 1638 to 1755m</div></div></div><div class="tog"></div>
+      </div>
+      <div class="opr"><span class="opl">Opacity</span><input type="range" class="ops" min="0" max="100" value="80" oninput="setOp('dem',this.value)"></div>
+      <div class="li" id="li-fl" onclick="togL('flow',this)">
+        <div class="li-l"><div class="sw" style="background:linear-gradient(90deg,#f0f8ff,#1e90ff,#00008b)"></div><div><div class="ln">Flow Accumulation</div><div class="ld">Surface water pathways</div></div></div><div class="tog"></div>
+      </div>
+      <div class="opr"><span class="opl">Opacity</span><input type="range" class="ops" min="0" max="100" value="80" oninput="setOp('flow',this.value)"></div>
+    </div>
+    <div style="margin-top:8px">
+      <div class="sec-lbl"><i class="fas fa-palette" style="color:var(--blue)"></i> Risk Legend</div>
+      <div class="leg-r">
+        <div class="leg-c" style="background:#ffffb2"></div><div class="leg-c" style="background:#fecc5c"></div>
+        <div class="leg-c" style="background:#fd8d3c"></div><div class="leg-c" style="background:#f03b20"></div>
+        <div class="leg-c" style="background:#bd0026"></div>
+      </div>
+      <div class="leg-l"><span>Very Low</span><span>Low</span><span>Moderate</span><span>High</span><span>Very High</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-lbl"><i class="fas fa-exclamation-triangle" style="color:var(--red)"></i> Critical Zones</div>
+    <div class="zc" onclick="fly(-1.2864,36.8200)">
+      <div class="zh"><span class="zn">&#x1F534; Nairobi River Corridor</span><span class="zb bc">CRITICAL</span></div>
+      <div class="zt">Low-lying riparian zone. Highest flow accumulation. Overflows during heavy rainfall. Informal settlements at severe risk.</div>
+    </div>
+    <div class="zc" onclick="fly(-1.2900,36.8250)">
+      <div class="zh"><span class="zn">&#x1F534; Central CBD Lowlands</span><span class="zb bc">CRITICAL</span></div>
+      <div class="zt">Lowest elevation zone. 100% impervious surface. Drainage overwhelmed during long rains. Major economic impact zone.</div>
+    </div>
+    <div class="zc" onclick="fly(-1.2820,36.8300)">
+      <div class="zh"><span class="zn">&#x1F7E0; Eastern CBD Fringe</span><span class="zb bh">HIGH RISK</span></div>
+      <div class="zt">Receives runoff from higher western areas. Flash flooding during intense rainfall events.</div>
+    </div>
+    <div class="zc" onclick="fly(-1.2750,36.8150)">
+      <div class="zh"><span class="zn">&#x1F7E1; Western Uplands</span><span class="zb bm">MODERATE</span></div>
+      <div class="zt">Higher elevation. Source zone feeding downstream flood areas. Urban expansion reducing infiltration.</div>
+    </div>
+  </div>
+</div>
+
+<div class="mw">
+  <div id="map"></div>
+  <div class="cmp-ov" id="cmp-ov">
+    <div class="cmp-div" id="cmp-div"></div>
+    <div class="cmp-ll">GIS 5-CLASS</div>
+    <div class="cmp-lr">AI PREDICTION</div>
+  </div>
+  <div class="mc">
+    <button class="mb on" id="mb-sat" onclick="setBM('satellite',this)"><i class="fas fa-satellite"></i> Satellite</button>
+    <button class="mb" id="mb-str" onclick="setBM('street',this)"><i class="fas fa-road"></i> Street</button>
+    <button class="mb" id="mb-drk" onclick="setBM('dark',this)"><i class="fas fa-moon"></i> Dark</button>
+  </div>
+</div>
+
+<div class="rp">
+  <div class="cc">
+    <div class="ct"><i class="fas fa-crosshairs"></i>&nbsp; Location Inspector</div>
+    <div id="click-info"><div class="cp"><i class="fas fa-mouse-pointer"></i>Click anywhere on the map to inspect flood risk at that location</div></div>
+  </div>
+  <div class="rp-sec">
+    <div class="ct"><i class="fas fa-hard-hat"></i>&nbsp; Planning Recommendations</div>
+    <div class="ri"><div class="ric" style="background:rgba(72,202,228,.15);color:var(--cyan)"><i class="fas fa-tint"></i></div><div><div class="rn">Upgrade Drainage Systems</div><div class="rd">Expand stormwater capacity in Very High and High risk zones to handle 100-year return period rainfall</div></div></div>
+    <div class="ri"><div class="ric" style="background:rgba(42,157,92,.15);color:var(--green)"><i class="fas fa-tree"></i></div><div><div class="rn">Riparian Buffer Zones</div><div class="rd">Establish 30m green buffer along Nairobi River corridor. Restore vegetation to absorb surface runoff</div></div></div>
+    <div class="ri"><div class="ric" style="background:rgba(244,162,97,.15);color:var(--orange)"><i class="fas fa-building"></i></div><div><div class="rn">Zoning Regulations</div><div class="rd">Enforce building setbacks from flood zones. Restrict new development in Very High risk areas</div></div></div>
+    <div class="ri"><div class="ric" style="background:rgba(230,57,70,.15);color:var(--red)"><i class="fas fa-bell"></i></div><div><div class="rn">Early Warning System</div><div class="rd">Deploy flood sensors at 4 critical hotspots. SMS alert system for residents in high-risk areas</div></div></div>
+    <div class="ri"><div class="ric" style="background:rgba(69,124,182,.15);color:var(--blue)"><i class="fas fa-road"></i></div><div><div class="rn">Permeable Surfaces</div><div class="rd">Replace impervious pavements with permeable alternatives in car parks and pedestrian zones</div></div></div>
+    <div class="ri"><div class="ric" style="background:rgba(233,196,106,.15);color:var(--yellow)"><i class="fas fa-home"></i></div><div><div class="rn">Relocation Programme</div><div class="rd">Provide safe housing alternatives for riparian zone residents and Very High probability areas</div></div></div>
+  </div>
+  <div class="sp">
+    <div class="ct"><i class="fas fa-chart-bar"></i>&nbsp; Study Statistics</div>
+    <div class="sr"><span class="sl">Study Area</span><span class="sv">Nairobi CBD</span></div>
+    <div class="sr"><span class="sl">Total Pixels</span><span class="sv">22,225</span></div>
+    <div class="sr"><span class="sl">Resolution</span><span class="sv">30m</span></div>
+    <div class="sr"><span class="sl">Flood Pixels</span><span class="sv">2,590</span></div>
+    <div class="sr"><span class="sl">Area at Risk</span><span class="sv">13.8%</span></div>
+    <div class="sr"><span class="sl">AI Model</span><span class="sv">Gradient Boosting</span></div>
+    <div class="sr"><span class="sl">Accuracy</span><span class="sv">87.63%</span></div>
+    <div class="sr"><span class="sl">Kappa Score</span><span class="sv">0.5566</span></div>
+    <div class="sr"><span class="sl">Top Predictor</span><span class="sv">DEM (56.3%)</span></div>
+    <div class="sr"><span class="sl">Built-up Area</span><span class="sv">47.1% of CBD</span></div>
+    <div class="sr"><span class="sl">Flood Events</span><span class="sv">2019-2024</span></div>
+    <div class="sr"><span class="sl">Data Sources</span><span class="sv">GEE/SRTM/ESA</span></div>
+  </div>
+</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// EXACT BOUNDS FROM YOUR bounds.json
+const B = {
+  flood_prob:      [[-1.299908,36.797206],[-1.265682,36.844367]],
+  flood_pred:      [[-1.299908,36.797206],[-1.265682,36.844367]],
+  susceptibility_5:[[-1.311651,36.784067],[-1.255938,36.862853]],
+  susceptibility_3:[[-1.311649,36.784067],[-1.255938,36.862852]],
+  dem:             [[-1.299908,36.797206],[-1.265682,36.844367]],
+  flow:            [[-1.311651,36.784067],[-1.255938,36.862853]],
+  landuse:         [[-1.299952,36.797419],[-1.265726,36.844312]]
+};
+
+const CBD=[−1.2821,36.8210],ZOOM=14;
+const map=L.map('map',{center:CBD,zoom:ZOOM});
+
+const BM={
+  satellite:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Esri World Imagery',maxZoom:19}),
+  street:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'OpenStreetMap',maxZoom:19}),
+  dark:L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'CartoDB',maxZoom:19})
+};
+BM.satellite.addTo(map);
+let curBM='satellite';
+
+const OV={};
+const STA={flood_prob:true,flood_pred:false,susceptibility_5:false,susceptibility_3:false,dem:false,flow:false,landuse:false};
+
+[{k:'flood_prob',s:'data/flood_prob.png'},{k:'flood_pred',s:'data/flood_pred.png'},
+ {k:'susceptibility_5',s:'data/susceptibility_5.png'},{k:'susceptibility_3',s:'data/susceptibility_3.png'},
+ {k:'dem',s:'data/dem.png'},{k:'flow',s:'data/flow.png'},{k:'landuse',s:'data/landuse.png'}
+].forEach(({k,s})=>{
+  OV[k]=L.imageOverlay(s,B[k],{opacity:0.8,interactive:false});
+  if(STA[k])OV[k].addTo(map);
+});
+
+function togL(k,el){STA[k]=!STA[k];el.classList.toggle('on',STA[k]);STA[k]?OV[k].addTo(map):map.removeLayer(OV[k]);}
+function setOp(k,v){if(OV[k])OV[k].setOpacity(v/100);}
+function setBM(n,btn){map.removeLayer(BM[curBM]);BM[n].addTo(map);BM[n].bringToBack();curBM=n;document.querySelectorAll('.mb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+function fly(lat,lng){map.flyTo([lat,lng],16,{duration:1.2});}
+function resetView(){map.flyTo(CBD,ZOOM,{duration:1});}
+
+const STORIES={
+  1:{t:'&#x26A7; Where Flooding Occurs in Nairobi CBD',b:'<p>Flood-prone areas concentrate in the <span class="hi">central and eastern CBD</span>, particularly along Nairobi River tributaries and drainage convergence points.</p><p>The AI model identified <span class="hi">13.8% of the CBD</span> as flood-prone (2,590 pixels at 30m) based on real satellite flood events 2019-2024 including the severe April-May 2024 El Nino floods that affected 147,061 people.</p><p>Toggle <strong>AI Prediction</strong> and <strong>GIS Susceptibility</strong> layers, or use <strong>Compare Maps</strong> to view them side by side.</p>'},
+  2:{t:'&#x1F50D; Why Does Nairobi CBD Flood?',b:'<p>Four environmental factors drive flooding, ranked by AI model importance:</p><ul class="alist"><li><div class="aico" style="background:rgba(230,57,70,.2);color:var(--red)">1</div><div><strong>Elevation DEM (56.3%)</strong> - low-lying areas accumulate runoff from higher ground. Even small elevation differences create major flood exposure variations.</div></li><li><div class="aico" style="background:rgba(244,162,97,.2);color:var(--orange)">2</div><div><strong>Slope (25.7%)</strong> - gentle gradients reduce drainage efficiency and promote water pooling.</div></li><li><div class="aico" style="background:rgba(69,124,182,.2);color:var(--blue)">3</div><div><strong>Flow Accumulation (12.0%)</strong> - high upstream contributing areas channel large runoff volumes into low zones.</div></li><li><div class="aico" style="background:rgba(42,157,92,.2);color:var(--green)">4</div><div><strong>Land Use (6.0%)</strong> - 47% of CBD is impervious built-up surface, eliminating natural infiltration.</div></li></ul>'},
+  3:{t:'&#x26A0; How Severe Is the Flood Risk?',b:'<p>The <span class="hi">Gradient Boosting AI model</span> achieved <span class="hi">87.63% accuracy</span> (Kappa 0.5566) trained on real satellite-detected flood events from 2019-2024.</p><p>The April-May 2024 El Nino floods displaced <span class="hi">147,061 people</span> in Nairobi County (OCHA, 2024), confirming the critical nature of risk zones identified in this study.</p><p>Enable the <strong>Flood Probability</strong> layer and click <strong>Compare Maps</strong> to contrast it with the GIS susceptibility map.</p>'},
+  4:{t:'&#x1F3D7; What Should Be Done?',b:'<p>Prioritised urban planning interventions for Nairobi CBD:</p><ul class="alist"><li><div class="aico" style="background:rgba(72,202,228,.2);color:var(--cyan)"><i class="fas fa-tint"></i></div><div><strong>Upgrade drainage</strong> in Very High and High risk zones to handle 100-year return period rainfall</div></li><li><div class="aico" style="background:rgba(42,157,92,.2);color:var(--green)"><i class="fas fa-tree"></i></div><div><strong>Riparian buffer zones</strong> - enforce 30m building setback along Nairobi River</div></li><li><div class="aico" style="background:rgba(244,162,97,.2);color:var(--orange)"><i class="fas fa-building"></i></div><div><strong>Zoning moratorium</strong> in Very High risk zones. Update Nairobi County development regulations</div></li><li><div class="aico" style="background:rgba(230,57,70,.2);color:var(--red)"><i class="fas fa-bell"></i></div><div><strong>Flood early warning sensors</strong> at the 4 critical hotspot zones identified in this study</div></li><li><div class="aico" style="background:rgba(69,124,182,.2);color:var(--blue)"><i class="fas fa-road"></i></div><div><strong>Permeable pavements</strong> in commercial zones - target replacing 20% of impervious surfaces</div></li></ul>'}
+};
+
+const AUTO={1:['flood_pred','susceptibility_5'],2:['flow','dem','landuse'],3:['flood_prob'],4:['flood_prob','susceptibility_5']};
+const LI_MAP={flood_prob:'li-fp',flood_pred:'li-fd',susceptibility_5:'li-s5',susceptibility_3:'li-s3',dem:'li-dm',flow:'li-fl',landuse:'li-lu'};
+
+function showCh(n,btn){
+  document.querySelectorAll('.ch').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const s=STORIES[n];
+  const el=document.getElementById('story');
+  el.innerHTML='<h4>'+s.t+'</h4>'+s.b;
+  el.classList.add('vis');
+  (AUTO[n]||[]).forEach(k=>{if(!STA[k]){const li=document.getElementById(LI_MAP[k]);if(li)togL(k,li);}});
+}
+
+let cmpOn=false;
+function toggleCompare(){
+  cmpOn=!cmpOn;
+  document.getElementById('btn-cmp').classList.toggle('on',cmpOn);
+  document.getElementById('cmp-ov').classList.toggle('on',cmpOn);
+  if(cmpOn){
+    if(!STA['susceptibility_5']){const li=document.getElementById('li-s5');togL('susceptibility_5',li);}
+    if(!STA['flood_pred']){const li=document.getElementById('li-fd');togL('flood_pred',li);}
+    setupDrag();
+  } else {
+    ['susceptibility_5','flood_pred'].forEach(k=>{const e=OV[k].getElement();if(e)e.style.clipPath='';});
+  }
+}
+
+function setupDrag(){
+  const div=document.getElementById('cmp-div');
+  const mapEl=document.getElementById('map');
+  let drag=false;
+  div.addEventListener('mousedown',()=>drag=true);
+  document.addEventListener('mousemove',e=>{
+    if(!drag)return;
+    const r=mapEl.getBoundingClientRect();
+    const pct=Math.max(5,Math.min(95,((e.clientX-r.left)/r.width)*100));
+    div.style.left=pct+'%';
+    const s5e=OV['susceptibility_5'].getElement();
+    const fde=OV['flood_pred'].getElement();
+    if(s5e)s5e.style.clipPath='polygon(0 0,'+pct+'% 0,'+pct+'% 100%,0 100%)';
+    if(fde)fde.style.clipPath='polygon('+pct+'% 0,100% 0,100% 100%,'+pct+'% 100%)';
+  });
+  document.addEventListener('mouseup',()=>drag=false);
+}
+
+let hsOn=false;
+const HSM=[];
+const HS=[
+  {lat:-1.2864,lng:36.8200,lbl:'H1',cls:'hmc',nm:'Nairobi River Corridor',risk:'CRITICAL',rc:'#bd0026',prob:0.92,elev:'1641m',flow:'Very High',lu:'Riparian/Built-up',why:'Natural drainage convergence. River overflows during heavy rainfall. Downstream of major urban catchment area.',acts:['30m riparian buffer zone enforcement','Flood retention basin upstream','Relocate informal settlements','Install flood monitoring sensors']},
+  {lat:-1.2900,lng:36.8250,lbl:'H2',cls:'hmc',nm:'Central CBD Lowlands',risk:'CRITICAL',rc:'#bd0026',prob:0.87,elev:'1645m',flow:'High',lu:'Dense Built-up',why:'Lowest elevation in CBD. 100% impervious surface. Drainage overwhelmed during long rains.',acts:['Upgrade stormwater drainage capacity','Permeable paving in car parks','Flood-proof ground floor structures','Deploy temporary flood barriers']},
+  {lat:-1.2820,lng:36.8300,lbl:'H3',cls:'hmh',nm:'Eastern CBD Fringe',risk:'HIGH',rc:'#f03b20',prob:0.71,elev:'1658m',flow:'Moderate',lu:'Mixed Built-up',why:'Receives runoff from western areas. Flash flooding during intense rainfall events in March-May.',acts:['Interceptor drains along road edges','Green roof incentives','Zoning restrictions on new development','Community flood preparedness training']},
+  {lat:-1.2750,lng:36.8150,lbl:'H4',cls:'hmm',nm:'Western Uplands Gateway',risk:'MODERATE',rc:'#fd8d3c',prob:0.38,elev:'1720m',flow:'Low',lu:'Built-up/Vegetation',why:'Source zone for downstream flooding. Urban expansion reducing natural vegetation and infiltration.',acts:['Preserve all existing green spaces','Implement Sustainable Urban Drainage (SuDS)','Mandatory tree planting for new builds','Permeable surface requirements']}
+];
+
+function toggleHotspots(){
+  hsOn=!hsOn;
+  document.getElementById('btn-hs').classList.toggle('on',hsOn);
+  if(hsOn){
+    HS.forEach(h=>{
+      const ico=L.divIcon({html:'<div class="hm '+h.cls+'">'+h.lbl+'</div>',iconSize:[26,26],iconAnchor:[13,13],className:''});
+      const m=L.marker([h.lat,h.lng],{icon:ico}).bindPopup(mkPopup(h),{maxWidth:260}).addTo(map);
+      HSM.push(m);
+    });
+  } else {
+    HSM.forEach(m=>map.removeLayer(m));
+    HSM.length=0;
+  }
+}
+
+function mkPopup(h){
+  const pct=Math.round(h.prob*100);
+  const acts=h.acts.map(a=>'<div class="pai"><i class="fas fa-chevron-right" style="font-size:7px"></i>'+a+'</div>').join('');
+  return '<div class="pc"><div class="pz">'+h.nm+'</div><div class="pb" style="background:'+h.rc+'22;color:'+h.rc+';border:1px solid '+h.rc+'">'+h.risk+' RISK</div><div class="rm"><div class="rm-l"><span style="font-size:9px;color:var(--txt2)">Flood Probability</span><span style="font-family:var(--font-m);color:'+h.rc+'">'+pct+'%</span></div><div class="rm-b"><div class="rm-f" style="width:'+pct+'%;background:'+h.rc+'"></div></div></div><div class="ig"><div class="ic"><div class="icl">Elevation</div><div class="icv">'+h.elev+'</div></div><div class="ic"><div class="icl">Flow</div><div class="icv">'+h.flow+'</div></div><div class="ic" style="grid-column:span 2"><div class="icl">Land Use</div><div class="icv">'+h.lu+'</div></div></div><div class="pf">'+h.why+'</div><div class="pa"><div class="pat"><i class="fas fa-hard-hat"></i> Recommended Actions</div>'+acts+'</div></div>';
+}
+
+map.on('click',function(e){
+  const lat=e.latlng.lat,lng=e.latlng.lng;
+  const r=calcRisk(lat,lng);
+  const bc=r.p>0.7?'#bd0026':r.p>0.5?'#f03b20':r.p>0.3?'#fd8d3c':'#2a9d5c';
+  const pct=Math.round(r.p*100);
+  document.getElementById('click-info').innerHTML='<div style="font-family:var(--font-m);font-size:9px;color:var(--muted);margin-bottom:9px">'+lat.toFixed(5)+'N, '+lng.toFixed(5)+'E</div><div class="rm"><div class="rm-l"><span style="color:var(--txt2);font-size:10px">Flood Probability</span><span style="font-family:var(--font-m);color:'+bc+';font-size:12px">'+pct+'%</span></div><div class="rm-b"><div class="rm-f" style="width:'+pct+'%;background:'+bc+'"></div></div></div><div class="ig"><div class="ic"><div class="icl">Risk Level</div><div class="icv" style="color:'+bc+'">'+r.lv+'</div></div><div class="ic"><div class="icl">Zone Type</div><div class="icv">'+r.zn+'</div></div></div><div style="font-size:10px;color:var(--txt2);margin-top:7px;padding:8px;background:var(--card);border-radius:4px;border:1px solid var(--border);line-height:1.5">'+r.note+'</div>';
+});
+
+function calcRisk(lat,lng){
+  const dE=lng-36.797;
+  const dS=-(lat+1.265);
+  const raw=Math.max(0,Math.min(1,0.3+dE*4+dS*3));
+  const p=Math.max(0.05,Math.min(0.97,raw+(Math.random()*0.08-0.04)));
+  let lv,zn,note;
+  if(p>0.75){lv='VERY HIGH';zn='Critical';note='This area is at very high flood risk. Development must be restricted. Immediate drainage upgrade and early warning systems required.';}
+  else if(p>0.55){lv='HIGH';zn='High Risk';note='High flood probability. Existing buildings should be flood-proofed. New development requires full flood impact assessment.';}
+  else if(p>0.35){lv='MODERATE';zn='Moderate Risk';note='Moderate flood risk. Sustainable Urban Drainage Systems (SuDS) recommended. Monitor closely during heavy rainfall.';}
+  else{lv='LOW';zn='Low Risk';note='Relatively low flood risk due to higher elevation or steeper slopes. Maintain green cover to preserve drainage capacity.';}
+  return{p,lv,zn,note};
+}
+
+setTimeout(()=>{if(!hsOn)document.getElementById('btn-hs').click();},1200);
+</script>
+</body>
+</html>
